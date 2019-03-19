@@ -14,15 +14,7 @@ int main(int argc, char *argv[]){
 	
 	Elf *elf;
 	int fp = open(argv[1], O_RDONLY);
-	size_t index;
-	if(*argv[2] == 'd'){
-		printf("you're right\n");
-		index = 23;
-	}
-	else if(*argv[2] == 't'){
-		printf("you're not right\n");
-		index = 14;
-	}
+
 	/****** MAKE SURE THE ELF HAS THE MAGIC HEADER ******/
 	elf = elf_begin(fp, ELF_C_READ, NULL);
 	char *ehdr_ident = NULL;
@@ -43,6 +35,16 @@ int main(int argc, char *argv[]){
 
 	/**********************************************************/
 	/* This prints the correct size of the section in bytes!! */
+	size_t index = 0;
+	if(*argv[2] == 'd'){
+		printf("section .data\n");
+		index = 23;
+	}
+	else if(*argv[2] == 't'){
+		printf("section .text\n");
+		index = 14;
+	}
+
 	Elf_Scn * curr = elf_getscn(elf, index);
 
 	Elf64_Shdr *sh64;
