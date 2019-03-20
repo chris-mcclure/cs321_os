@@ -1,3 +1,7 @@
+// Chris McClure
+// CS321 Rough Draft
+// Purpose: Prints the size of an Elf file that is passed to it.
+
 #include <libelf.h>
 #include <fcntl.h>
 #include <stdio.h>
