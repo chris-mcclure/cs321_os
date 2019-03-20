@@ -1,3 +1,6 @@
 #!/bin/bash
+#Chris McClure
+#CS321 Project Rough Rough draft
+#Purpose: Prints out the sections of the passed elf file
 FILE=${1?Error: No file was given!}
 readelf -S $FILE
