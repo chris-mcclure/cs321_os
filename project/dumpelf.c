@@ -13,7 +13,7 @@
 int main(int argc, char *argv[]){
 	/****** MAKING SURE ELF VERSION IS UP TO DATE *****/
 	if(elf_version(EV_CURRENT) == EV_NONE){
-		printf("YOU SUCK.\n");
+		printf("NOT CURRENT.\n");
 	}
 	
 	Elf *elf;
