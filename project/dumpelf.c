@@ -10,13 +10,41 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <string.h>
 
-size_t getSection(char);
-void printSize(Elf *, size_t);
-void initChecks(int, char *[]);
+//utility functions for retrieving the size and indices of the elf headers
+size_t getSection(char, Elf *, Elf64_Ehdr *);
+int getSize(Elf *, size_t);
+void initChecks(int, char **);
 
-int main(int argc, char *argv[]){
+static inline Elf64_Shdr *elf_sheader(Elf64_Ehdr *hdr){
+	return (Elf64_Shdr *)((int)hdr + hdr->e_shoff);
+}
+
+static inline Elf64_Shdr *elf_section(Elf64_Ehdr *hdr, int idx) {
+	Elf64_Shdr * sheader = &elf_sheader(hdr)[idx];
+	return sheader;
+}
+
+static inline char *elf_str_table(Elf64_Ehdr *hdr){
+	if(hdr->e_shstrndx == SHN_UNDEF){
+		return NULL;
+	}
+	Elf64_Shdr *elf_scn = elf_section(hdr, hdr->e_shstrndx);
+	return 0;
 	
+}
+
+static inline char *elf_lookup_string(Elf64_Ehdr *hdr, int offset){
+	char *strtab = elf_str_table(hdr);
+	if(strtab == NULL){
+		return NULL;
+	}
+	return strtab + offset;
+}
+
+//main
+int main(int argc, char *argv[]){
 	initChecks(argc, argv); // make sure args are in correct format
 	
 	/****** MAKING SURE ELF VERSION IS UP TO DATE *****/
@@ -41,18 +69,22 @@ int main(int argc, char *argv[]){
 	   ehdr_ident[3] == '\x46') {	//'F'
 		printf("this is a valid elf object file!\n");
 	}
-	
+
 	/*PRINTING OUT THE NUMBER OF SECTIONS ACCORDING TO THE HEADER*/
 	Elf64_Ehdr *eh64;
 	eh64 = elf64_getehdr(elf);
 	int shnum = eh64->e_shnum;
-	printf("number of sections: %d\n", shnum);
+	printf("number of sections: %d\n", shnum);	
+	
+	char * thing = elf_lookup_string(eh64, 4);
 
 	/**********************************************************/
 	/* This prints the correct size of the section in bytes!! */
-	size_t num = getSection(*argv[2]);
-	printSize(elf, num);
+	size_t num = getSection(*argv[2], elf, eh64);
+	int size = getSize(elf, num);
+	printf("section size is: %d bytes\n", size);
 	/**********************************************************/
+	
 	return 0;
 }
 
@@ -60,7 +92,7 @@ int main(int argc, char *argv[]){
 // function takes arguments passed into the command line.
 // if there isn't enough arguments passed to the command line, 
 // or the file passed isn't an executable, exit with a message. 
-void initChecks(int argc, char *argv[]){
+void initChecks(int argc, char **argv){
 	struct stat sb;
 	if(stat(argv[1], &sb) == 0 && (sb.st_mode & S_IXUSR) == 0){
 		printf("was not passed an executable file. exiting.\n");
@@ -75,10 +107,10 @@ void initChecks(int argc, char *argv[]){
 
 // getSection
 // this function takes the paramater, sets and returns the corresponding index to main. otherwise the choice was invalid and program exits.
-size_t getSection(char choice){
+size_t getSection(char choice, Elf * elf, Elf64_Ehdr * hdr){
 
-
-//find a way to get the index with out manually setting it
+// I could use the stackoverflow example to locate a particular 
+// section name and then return the index associated with that.
 	size_t index = 0;
 	switch(choice){
 	case 'd':
@@ -89,6 +121,12 @@ size_t getSection(char choice){
 		printf("\nSECTION .TEXT\n");
 		index = 14;
 		break;
+	case 'a':
+		printf("\nSECTION .DATA + SECTION .TEXT\n");
+		int data = getSize(elf, 23);
+		int text = getSize(elf, 14);
+		printf("combined size is %d bytes\n", data+text);
+		exit(0);
 	default:
 		printf("\nInvalid input, choices are t and d. rebuild and try again\n");
 		exit(0);
@@ -98,9 +136,10 @@ size_t getSection(char choice){
 
 // printSize
 // function takes the ELF pointer as well as the index returned by getSection. gets the section header of the index and returns the size.
-void printSize(Elf *elf, size_t num){
+int getSize(Elf *elf, size_t num){
 	Elf_Scn * curr = elf_getscn(elf, num);
 	Elf64_Shdr *sh64;
 	sh64 = elf64_getshdr(curr);
-	printf("section size is: %d bytes\n", (int)sh64->sh_size);
+	return (int)sh64->sh_size;
 }
+
